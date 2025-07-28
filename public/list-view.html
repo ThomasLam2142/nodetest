@@ -101,9 +101,9 @@
                     <th class="sortable" onclick="sortTable('serial_number')" data-column="serial_number">Serial Number <span class="sort-indicator">↕</span></th>
                     <th class="sortable" onclick="sortTable('owner')" data-column="owner">Owner <span class="sort-indicator">↕</span></th>
                     <th class="sortable" onclick="sortTable('borrowee')" data-column="borrowee">Borrowee <span class="sort-indicator">↕</span></th>
-                    <th class="sortable" onclick="sortTable('status')" data-column="status">Status <span class="sort-indicator">↕</span></th>
                     <th class="sortable" onclick="sortTable('memory')" data-column="memory">Memory <span class="sort-indicator">↕</span></th>
                     <th class="sortable" onclick="sortTable('release_year')" data-column="release_year">Release Year <span class="sort-indicator">↕</span></th>
+                    <th class="sortable" onclick="sortTable('status')" data-column="status">Status <span class="sort-indicator">↕</span></th>
                 </tr>
             </thead>
             <tbody id="gpu-tbody">
@@ -177,9 +177,9 @@ renderTable(getFilteredGPUs());
                     <td>${gpu.serial_number}</td>
                     <td>${gpu.owner}</td>
                     <td>${gpu.borrowee ? gpu.borrowee : '<span class="null-value">Not borrowed</span>'}</td>
-                    <td><span class="status status-${gpu.status}">${gpu.status}</span></td>
                     <td>${gpu.additional_info?.memory || '<span class="null-value">N/A</span>'}</td>
                     <td>${gpu.additional_info?.release_year || '<span class="null-value">N/A</span>'}</td>
+                    <td><span class="status status-${gpu.status}">${gpu.status}</span></td>
                 `;
                 
                 tbody.appendChild(row);

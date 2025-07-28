@@ -14,7 +14,7 @@
         "serial_number": "NV4090-ABC123-001",
         "owner": "John Smith",
         "borrowee": null,
-        "status": "missing",
+        "status": "in-use",
         "additional_info": {
           "memory": "24GB GDDR6X",
           "release_year": 2022,
@@ -44,7 +44,7 @@
         "serial_number": "INTARC-GHI789-003",
         "owner": "Bob Wilson",
         "borrowee": null,
-        "status": "in-use",
+        "status": "missing",
         "additional_info": {
           "memory": "16GB GDDR6",
           "release_year": 2022,
