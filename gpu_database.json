@@ -9,7 +9,7 @@
       {
         "id": 1,
         "vendor": "NVIDIA",
-        "name": "GeForce RTX 4090",
+        "name": "RTX 4090",
         "generation": "Ada Lovelace",
         "serial_number": "NV4090-ABC123-001",
         "owner": "John Smith",
@@ -54,7 +54,7 @@
       {
         "id": 4,
         "vendor": "NVIDIA",
-        "name": "GeForce RTX 3080",
+        "name": "RTX 3080",
         "generation": "Ampere",
         "serial_number": "NV3080-JKL012-004",
         "owner": "Sarah Davis",
