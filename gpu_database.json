@@ -1,0 +1,130 @@
+{
+  "gpu_database": {
+    "metadata": {
+      "version": "1.0",
+      "created": "2025-07-28",
+      "description": "Database of GPU information including vendor, name, generation, serial numbers, owner, borrowee, and status"
+    },
+    "gpus": [
+      {
+        "id": 1,
+        "vendor": "NVIDIA",
+        "name": "GeForce RTX 4090",
+        "generation": "Ada Lovelace",
+        "serial_number": "NV4090-ABC123-001",
+        "owner": "John Smith",
+        "borrowee": null,
+        "status": "missing",
+        "additional_info": {
+          "memory": "24GB GDDR6X",
+          "release_year": 2022,
+          "purchase_date": "2023-01-15"
+        }
+      },
+      {
+        "id": 2,
+        "vendor": "AMD",
+        "name": "RX 7900 XTX",
+        "generation": "RDNA 3",
+        "serial_number": "AMD7900-DEF456-002",
+        "owner": "Alice Johnson",
+        "borrowee": "Tech Team Lead",
+        "status": "loaned-out",
+        "additional_info": {
+          "memory": "24GB GDDR6",
+          "release_year": 2022,
+          "purchase_date": "2023-03-20"
+        }
+      },
+      {
+        "id": 3,
+        "vendor": "Intel",
+        "name": "Arc A770",
+        "generation": "Alchemist",
+        "serial_number": "INTARC-GHI789-003",
+        "owner": "Bob Wilson",
+        "borrowee": null,
+        "status": "in-use",
+        "additional_info": {
+          "memory": "16GB GDDR6",
+          "release_year": 2022,
+          "purchase_date": "2022-12-10"
+        }
+      },
+      {
+        "id": 4,
+        "vendor": "NVIDIA",
+        "name": "GeForce RTX 3080",
+        "generation": "Ampere",
+        "serial_number": "NV3080-JKL012-004",
+        "owner": "Sarah Davis",
+        "borrowee": "Emily Chen",
+        "status": "available",
+        "additional_info": {
+          "memory": "10GB GDDR6X",
+          "release_year": 2020,
+          "purchase_date": "2021-02-28"
+        }
+      },
+      {
+        "id": 5,
+        "vendor": "AMD",
+        "name": "RX 6800 XT",
+        "generation": "RDNA 2",
+        "serial_number": "AMD6800-MNO345-005",
+        "owner": "Mike Brown",
+        "borrowee": "Research Team",
+        "status": "loaned-out",
+        "additional_info": {
+          "memory": "16GB GDDR6",
+          "release_year": 2020,
+          "purchase_date": "2021-01-05"
+        }
+      },
+      {
+        "id": 6,
+        "vendor": "AMD",
+        "name": "RX 7900 XT",
+        "generation": "RDNA 3",
+        "serial_number": "123123123123",
+        "owner": "Thomas Lam",
+        "borrowee": null,
+        "status": "available",
+        "additional_info": {
+          "memory": "20 GB GDDR 5",
+          "release_year": 2022,
+          "purchase_date": "2025-07-28"
+        }
+      }
+    ],
+    "schema": {
+      "required_fields": [
+        "id",
+        "vendor",
+        "name",
+        "generation",
+        "serial_number",
+        "owner",
+        "borrowee",
+        "status"
+      ],
+      "field_descriptions": {
+        "id": "Unique identifier for each GPU entry",
+        "vendor": "GPU manufacturer (e.g., NVIDIA, AMD, Intel)",
+        "name": "Specific model name of the GPU",
+        "generation": "Architecture generation or codename",
+        "serial_number": "Unique serial number for the specific GPU unit",
+        "owner": "Name of the person or entity who owns the GPU",
+        "borrowee": "Name of the person or entity currently borrowing the GPU (null if not borrowed)",
+        "status": "Current operational status of the GPU",
+        "additional_info": "Optional object for storing extra GPU specifications"
+      },
+      "status_values": {
+        "available": "GPU is available and ready for use",
+        "missing": "GPU is missing or cannot be located",
+        "in-use": "GPU is currently being used internally",
+        "loaned-out": "GPU is loaned out to someone"
+      }
+    }
+  }
+}

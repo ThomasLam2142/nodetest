@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kanban Board</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #666;
+            margin-bottom: 20px;
+        }
+
+        .back-link {
+            display: inline-block;
+            color: #007bff;
+            text-decoration: none;
+            margin-bottom: 20px;
+        }
+
+        .back-link:hover {
+            text-decoration: underline;
+        }
+
+        .kanban-board {
+            display: flex;
+            gap: 15px;
+            width: 100%;
+            max-width: 100vw;
+            margin: 0 auto;
+            padding: 0 10px;
+            box-sizing: border-box;
+        }
+
+        .column {
+            background-color: #e9ecef;
+            border-radius: 8px;
+            padding: 12px;
+            flex: 1;
+            min-width: 0;
+            max-height: 80vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .column-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding: 10px;
+            background-color: #dee2e6;
+            border-radius: 6px;
+        }
+
+        .column-title {
+            font-weight: bold;
+            color: #333;
+            font-size: 16px;
+        }
+
+        .task-count {
+            background-color: #6c757d;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            min-width: 20px;
+            text-align: center;
+        }
+
+        .add-task-btn {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: background-color 0.2s;
+        }
+
+        .add-task-btn:hover {
+            background-color: #218838;
+        }
+
+        .task-list {
+            flex: 1;
+            overflow-y: auto;
+            min-height: 200px;
+        }
+
+        .task {
+            background-color: white;
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            cursor: grab;
+            transition: transform 0.2s, box-shadow 0.2s;
+            border-left: 4px solid #007bff;
+        }
+
+        .task:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+
+        .task.dragging {
+            opacity: 0.5;
+            cursor: grabbing;
+        }
+
+        .task-title {
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+
+        .task-description {
+            color: #666;
+            font-size: 12px;
+            line-height: 1.4;
+            margin-bottom: 8px;
+        }
+
+        .task-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 11px;
+            color: #999;
+        }
+
+        .task-priority {
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-size: 10px;
+            font-weight: bold;
+        }
+
+        .priority-high {
+            background-color: #dc3545;
+            color: white;
+        }
+
+        .priority-medium {
+            background-color: #ffc107;
+            color: #212529;
+        }
+
+        .priority-low {
+            background-color: #28a745;
+            color: white;
+        }
+
+        .task-actions {
+            display: flex;
+            gap: 5px;
+        }
+
+        .task-action-btn {
+            background: none;
+            border: none;
+            color: #6c757d;
+            cursor: pointer;
+            padding: 2px;
+            border-radius: 2px;
+            font-size: 12px;
+        }
+
+        .task-action-btn:hover {
+            color: #495057;
+            background-color: #e9ecef;
+        }
+
+        .column.drag-over {
+            background-color: #d1ecf1;
+            border: 2px dashed #17a2b8;
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.4);
+            animation: fadeIn 0.3s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: 10% auto;
+            padding: 20px;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            animation: slideIn 0.3s;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateY(-50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-title {
+            color: #333;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .close {
+            color: #aaa;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            line-height: 1;
+        }
+
+        .close:hover {
+            color: #000;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.2s;
+        }
+
+        .btn-primary {
+            background-color: #007bff;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: #0056b3;
+        }
+
+        .btn-secondary {
+            background-color: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background-color: #545b62;
+        }
+
+        .btn-danger {
+            background-color: #dc3545;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background-color: #c82333;
+        }
+
+        .empty-state {
+            text-align: center;
+            color: #999;
+            font-style: italic;
+            padding: 20px;
+            border: 2px dashed #dee2e6;
+            border-radius: 6px;
+            margin: 10px 0;
+        }
+        
+        /* Filter Controls Styles */
+        .filter-controls {
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            border: 1px solid #dee2e6;
+        }
+        
+        .filter-controls h3 {
+            margin: 0 0 15px 0;
+            color: #333;
+            font-size: 16px;
+        }
+        
+        .checkbox-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: center;
+        }
+        
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            font-size: 14px;
+            color: #333;
+            user-select: none;
+            transition: color 0.2s;
+        }
+        
+        .checkbox-label:hover {
+            color: #007bff;
+        }
+        
+        .checkbox-label input[type="checkbox"] {
+            margin-right: 8px;
+            transform: scale(1.2);
+            cursor: pointer;
+        }
+        
+        .checkmark {
+            margin-right: 8px;
+        }
+        
+        /* Column visibility */
+        .column.hidden {
+            display: none;
+        }
+
+        @media (max-width: 1200px) {
+            .kanban-board {
+                gap: 10px;
+                padding: 0 5px;
+            }
+            
+            .column {
+                padding: 10px;
+            }
+            
+            .column-title {
+                font-size: 14px;
+            }
+        }
+        
+        @media (max-width: 900px) {
+            .kanban-board {
+                gap: 8px;
+                padding: 0 3px;
+            }
+            
+            .column {
+                padding: 8px;
+            }
+            
+            .column-title {
+                font-size: 13px;
+            }
+            
+            .task {
+                padding: 10px;
+                margin-bottom: 8px;
+            }
+            
+            .task-title {
+                font-size: 13px;
+            }
+            
+            .task-description {
+                font-size: 11px;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .kanban-board {
+                flex-direction: column;
+                gap: 15px;
+                padding: 0;
+            }
+            
+            .column {
+                min-width: auto;
+                max-height: none;
+                padding: 15px;
+            }
+            
+            .column-title {
+                font-size: 16px;
+            }
+            
+            .task {
+                padding: 12px;
+                margin-bottom: 10px;
+            }
+            
+            .task-title {
+                font-size: 14px;
+            }
+            
+            .task-description {
+                font-size: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <a href="/list-view.html" class="back-link">← GPU Database</a>
+    
+    <div class="header">
+        <h1>GPU Management Board</h1>
+        <p>Drag and drop GPUs between columns to update their status</p>
+        
+        <!-- Filter Controls -->
+        <div class="filter-controls">
+            <h3>Show/Hide Columns:</h3>
+            <div class="checkbox-group">
+                <label class="checkbox-label">
+                    <input type="checkbox" id="show-available" checked>
+                    <span class="checkmark"></span>
+                    🟢 Available
+                </label>
+                <label class="checkbox-label">
+                    <input type="checkbox" id="show-missing" checked>
+                    <span class="checkmark"></span>
+                    🔴 Missing
+                </label>
+                <label class="checkbox-label">
+                    <input type="checkbox" id="show-in-use" checked>
+                    <span class="checkmark"></span>
+                    🟡 In Use
+                </label>
+                <label class="checkbox-label">
+                    <input type="checkbox" id="show-loaned-out" checked>
+                    <span class="checkmark"></span>
+                    🔵 Loaned Out
+                </label>
+            </div>
+        </div>
+    </div>
+
+    <div class="kanban-board" id="kanban-board">
+        <div class="column" data-status="available">
+            <div class="column-header">
+                <span class="column-title">🟢 Available</span>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span class="task-count" id="available-count">0</span>
+                </div>
+            </div>
+            <div class="task-list" id="available-tasks"></div>
+        </div>
+
+        <div class="column" data-status="missing">
+            <div class="column-header">
+                <span class="column-title">🔴 Missing</span>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span class="task-count" id="missing-count">0</span>
+                </div>
+            </div>
+            <div class="task-list" id="missing-tasks"></div>
+        </div>
+
+        <div class="column" data-status="in-use">
+            <div class="column-header">
+                <span class="column-title">🟡 In Use</span>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span class="task-count" id="in-use-count">0</span>
+                </div>
+            </div>
+            <div class="task-list" id="in-use-tasks"></div>
+        </div>
+
+        <div class="column" data-status="loaned-out">
+            <div class="column-header">
+                <span class="column-title">🔵 Loaned Out</span>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span class="task-count" id="loaned-out-count">0</span>
+                </div>
+            </div>
+            <div class="task-list" id="loaned-out-tasks"></div>
+        </div>
+    </div>
+
+    <!-- Task Modal -->
+    <div id="task-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span class="modal-title" id="modal-title">Add New Task</span>
+                <span class="close" onclick="closeTaskModal()">&times;</span>
+            </div>
+            <form id="task-form">
+                <div class="form-group">
+                    <label for="task-title">Title *</label>
+                    <input type="text" id="task-title" required>
+                </div>
+                <div class="form-group">
+                    <label for="task-description">Description</label>
+                    <textarea id="task-description" placeholder="Enter task description..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="task-priority">Priority</label>
+                    <select id="task-priority">
+                        <option value="low">Low</option>
+                        <option value="medium" selected>Medium</option>
+                        <option value="high">High</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="task-assignee">Assignee</label>
+                    <input type="text" id="task-assignee" placeholder="Enter assignee name...">
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeTaskModal()">Cancel</button>
+                    <button type="button" class="btn btn-danger" id="delete-task-btn" onclick="deleteTask()" style="display: none;">Delete</button>
+                    <button type="submit" class="btn btn-primary" id="save-task-btn">Save Task</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        class GPUKanbanBoard {
+            constructor() {
+                this.gpus = [];
+                this.draggedGPU = null;
+                
+                this.init();
+            }
+
+            async init() {
+                await this.loadGPUs();
+                this.setupEventListeners();
+            }
+
+            setupEventListeners() {
+                // Drag and drop events
+                this.setupDragAndDrop();
+                
+                // Filter controls
+                this.setupFilterControls();
+            }
+
+            setupDragAndDrop() {
+                const columns = document.querySelectorAll('.column');
+                
+                columns.forEach(column => {
+                    column.addEventListener('dragover', (e) => {
+                        e.preventDefault();
+                        column.classList.add('drag-over');
+                    });
+
+                    column.addEventListener('dragleave', (e) => {
+                        if (!column.contains(e.relatedTarget)) {
+                            column.classList.remove('drag-over');
+                        }
+                    });
+
+                    column.addEventListener('drop', (e) => {
+                        e.preventDefault();
+                        column.classList.remove('drag-over');
+                        
+                        if (this.draggedGPU) {
+                            const newStatus = column.dataset.status;
+                            this.moveGPU(this.draggedGPU.id, newStatus);
+                            this.draggedGPU = null;
+                        }
+                    });
+                });
+            }
+
+            async loadGPUs() {
+                try {
+                    const response = await fetch('/api/gpus');
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    this.gpus = await response.json();
+                    this.renderAllGPUs();
+                    this.updateGPUCounts();
+                } catch (error) {
+                    console.error('Error loading GPUs:', error);
+                    // Show error in all columns
+                    ['available', 'missing', 'in-use', 'loaned-out'].forEach(status => {
+                        const container = document.getElementById(`${status}-tasks`);
+                        container.innerHTML = '<div class="empty-state">Error loading GPUs</div>';
+                    });
+                }
+            }
+
+            renderAllGPUs() {
+                const columns = ['available', 'missing', 'in-use', 'loaned-out'];
+                
+                columns.forEach(status => {
+                    this.renderGPUsInColumn(status);
+                });
+            }
+
+            renderGPUsInColumn(status) {
+                const container = document.getElementById(`${status}-tasks`);
+                const gpus = this.gpus.filter(gpu => gpu.status === status);
+                
+                if (gpus.length === 0) {
+                    container.innerHTML = '<div class="empty-state">No GPUs in this status</div>';
+                    return;
+                }
+
+                container.innerHTML = gpus.map(gpu => this.createGPUHTML(gpu)).join('');
+                
+                // Add event listeners to GPUs
+                container.querySelectorAll('.task').forEach(gpuElement => {
+                    this.setupGPUEventListeners(gpuElement);
+                });
+            }
+
+            createGPUHTML(gpu) {
+                const purchaseDate = gpu.additional_info?.purchase_date ? 
+                    new Date(gpu.additional_info.purchase_date).toLocaleDateString() : 'N/A';
+                
+                return `
+                    <div class="task" draggable="true" data-task-id="${gpu.id}">
+                        <div class="task-title">${this.escapeHtml(gpu.name)}</div>
+                        <div class="task-description">
+                            <strong>${this.escapeHtml(gpu.vendor)}</strong> • ${this.escapeHtml(gpu.generation)}<br>
+                            Serial: ${this.escapeHtml(gpu.serial_number)}
+                        </div>
+                        <div class="task-meta">
+                            <div style="display: flex; flex-direction: column; gap: 4px;">
+                                <div><strong>Owner:</strong> ${this.escapeHtml(gpu.owner)}</div>
+                                ${gpu.borrowee ? `<div><strong>Borrowee:</strong> ${this.escapeHtml(gpu.borrowee)}</div>` : ''}
+                                ${gpu.additional_info?.memory ? `<div><strong>Memory:</strong> ${this.escapeHtml(gpu.additional_info.memory)}</div>` : ''}
+                            </div>
+                        </div>
+                        <div style="margin-top: 8px; font-size: 10px; color: #999;">
+                            ID: ${gpu.id} • Purchase: ${purchaseDate}
+                        </div>
+                    </div>
+                `;
+            }
+
+            setupGPUEventListeners(gpuElement) {
+                gpuElement.addEventListener('dragstart', (e) => {
+                    const gpuId = parseInt(gpuElement.dataset.taskId);
+                    this.draggedGPU = this.gpus.find(g => g.id === gpuId);
+                    gpuElement.classList.add('dragging');
+                });
+
+                gpuElement.addEventListener('dragend', () => {
+                    gpuElement.classList.remove('dragging');
+                });
+            }
+
+            async moveGPU(gpuId, newStatus) {
+                const gpu = this.gpus.find(g => g.id === gpuId);
+                if (!gpu || gpu.status === newStatus) return;
+                
+                try {
+                    // Create a PATCH endpoint request to update GPU status
+                    const response = await fetch(`/api/gpus/${gpuId}`, {
+                        method: 'PATCH',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ status: newStatus })
+                    });
+                    
+                    if (response.ok) {
+                        // Update local state
+                        gpu.status = newStatus;
+                        this.renderAllGPUs();
+                        this.updateGPUCounts();
+                    } else {
+                        const errorData = await response.json();
+                        alert(`Failed to update GPU status: ${errorData.error || 'Unknown error'}`);
+                    }
+                } catch (error) {
+                    console.error('Error updating GPU status:', error);
+                    alert('Failed to update GPU status. Please try again.');
+                }
+            }
+
+            updateGPUCounts() {
+                const columns = ['available', 'missing', 'in-use', 'loaned-out'];
+                
+                columns.forEach(status => {
+                    const count = this.gpus.filter(gpu => gpu.status === status).length;
+                    const countElement = document.getElementById(`${status}-count`);
+                    if (countElement) {
+                        countElement.textContent = count;
+                    }
+                });
+            }
+
+            setupFilterControls() {
+                // Get all filter checkboxes
+                const checkboxes = {
+                    'show-available': 'available',
+                    'show-missing': 'missing',
+                    'show-in-use': 'in-use',
+                    'show-loaned-out': 'loaned-out'
+                };
+
+                // Add event listeners to each checkbox
+                Object.entries(checkboxes).forEach(([checkboxId, status]) => {
+                    const checkbox = document.getElementById(checkboxId);
+                    const column = document.querySelector(`[data-status="${status}"]`);
+                    
+                    if (checkbox && column) {
+                        checkbox.addEventListener('change', () => {
+                            if (checkbox.checked) {
+                                column.classList.remove('hidden');
+                            } else {
+                                column.classList.add('hidden');
+                            }
+                        });
+                    }
+                });
+            }
+
+            escapeHtml(text) {
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
+        }
+
+        // Initialize the GPU Kanban board
+        const gpuBoard = new GPUKanbanBoard();
+    </script>
+</body>
+</html>

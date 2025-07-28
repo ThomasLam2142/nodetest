@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GPU Database - GPU List</title>
+    <link rel="stylesheet" href="css/list-view.css">
+<style>
+    
+</style>
+</head>
+<body>
+    <div class="container">
+        <h1>GPU Database</h1>
+        
+
+<div class="button-group">
+            <button class="btn btn-primary" onclick="openAddGPUModal()">Add GPU</button>
+            <button class="btn btn-success" onclick="loadGPUs()">Refresh Data</button>
+            <a href="/kanban.html" class="btn btn-secondary" style="text-decoration: none; display: inline-block;">📋 Kanban Board</a>
+        </div>
+
+        <div class="filter-pane" style="margin: 10px 0;">
+            <label><input type="checkbox" id="hide-missing"> Hide Missing</label>
+            <label><input type="checkbox" id="hide-in-use" style="margin-left:10px;"> Hide In Use</label>
+<label><input type="checkbox" id="hide-loaned-out" style="margin-left:10px;"> Hide Loaned Out</label>
+            <label><input type="checkbox" id="hide-available" style="margin-left:10px;"> Hide Available</label>
+        </div>
+        <!-- Add GPU Modal -->
+        <div id="add-gpu-modal" class="modal" style="display: none;">
+            <div class="modal-content" style="max-width: 800px; margin: auto; padding: 30px; background-color: white; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+                <span class="close" onclick="closeAddGPUModal()">&times;</span>
+                <h2>Add New GPU</h2>
+                <form id="add-gpu-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="vendor">Vendor <span class="required">*</span></label>
+                            <select id="vendor" name="vendor" required>
+                                <option value="">Select Vendor</option>
+                                <option value="NVIDIA">NVIDIA</option>
+                                <option value="AMD">AMD</option>
+                                <option value="Intel">Intel</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="name">GPU Name <span class="required">*</span></label>
+                            <input type="text" id="name" name="name" required placeholder="e.g., GeForce RTX 4090">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="generation">Generation <span class="required">*</span></label>
+                            <input type="text" id="generation" name="generation" required placeholder="e.g., Ada Lovelace, RDNA 3">
+                        </div>
+                        <div class="form-group">
+                            <label for="serial_number">Serial Number <span class="required">*</span></label>
+                            <input type="text" id="serial_number" name="serial_number" required placeholder="e.g., NV4090-ABC123-001">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="owner">Owner <span class="required">*</span></label>
+                            <input type="text" id="owner" name="owner" required placeholder="e.g., John Smith">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="memory">Memory</label>
+                            <input type="text" id="memory" name="memory" placeholder="e.g., 24GB GDDR6X">
+                        </div>
+                        <div class="form-group">
+                            <label for="release_year">Release Year</label>
+                            <input type="number" id="release_year" name="release_year" min="2000" max="2030" placeholder="e.g., 2022">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="purchase_date">Purchase Date</label>
+                        <input type="date" id="purchase_date" name="purchase_date">
+                    </div>
+                    <div class="button-group">
+                        <button type="submit" class="btn btn-primary">Add GPU</button>
+                        <button type="button" class="btn btn-secondary" onclick="resetForm()">Reset Form</button>
+                        <button type="button" class="btn btn-secondary" onclick="closeAddGPUModal()">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div id="loading" class="loading">Loading GPU data...</div>
+        <div id="error" class="error" style="display: none;"></div>
+        <div id="success-message" class="success" style="display: none;"></div>
+        
+        <table id="gpu-table" style="display: none;">
+            <thead>
+                <tr>
+                    <th class="sortable" onclick="sortTable('id')" data-column="id">ID <span class="sort-indicator">↕</span></th>
+                    <th class="sortable" onclick="sortTable('vendor')" data-column="vendor">Vendor <span class="sort-indicator">↕</span></th>
+                    <th class="sortable" onclick="sortTable('name')" data-column="name">Name <span class="sort-indicator">↕</span></th>
+                    <th class="sortable" onclick="sortTable('generation')" data-column="generation">Generation <span class="sort-indicator">↕</span></th>
+                    <th class="sortable" onclick="sortTable('serial_number')" data-column="serial_number">Serial Number <span class="sort-indicator">↕</span></th>
+                    <th class="sortable" onclick="sortTable('owner')" data-column="owner">Owner <span class="sort-indicator">↕</span></th>
+                    <th class="sortable" onclick="sortTable('borrowee')" data-column="borrowee">Borrowee <span class="sort-indicator">↕</span></th>
+                    <th class="sortable" onclick="sortTable('status')" data-column="status">Status <span class="sort-indicator">↕</span></th>
+                    <th class="sortable" onclick="sortTable('memory')" data-column="memory">Memory <span class="sort-indicator">↕</span></th>
+                    <th class="sortable" onclick="sortTable('release_year')" data-column="release_year">Release Year <span class="sort-indicator">↕</span></th>
+                </tr>
+            </thead>
+            <tbody id="gpu-tbody">
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        let currentGPUs = [];
+        let sortColumn = null;
+        let sortDirection = 'asc';
+
+        async function loadGPUs() {
+            const loading = document.getElementById('loading');
+            const error = document.getElementById('error');
+            const table = document.getElementById('gpu-table');
+            const tbody = document.getElementById('gpu-tbody');
+
+            // Show loading, hide error and table
+            loading.style.display = 'block';
+            error.style.display = 'none';
+            table.style.display = 'none';
+
+            try {
+                const response = await fetch('/api/gpus');
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const gpus = await response.json();
+                
+                // Store GPUs globally for sorting
+                currentGPUs = gpus;
+                
+                // Render the table
+renderTable(getFilteredGPUs());
+                
+                // Hide loading, show table
+                loading.style.display = 'none';
+                table.style.display = 'table';
+                
+            } catch (err) {
+                console.error('Error loading GPU data:', err);
+                
+                // Show error message
+                loading.style.display = 'none';
+                error.style.display = 'block';
+                error.textContent = `Failed to load GPU data: ${err.message}`;
+            }
+        }
+
+        // Render table with given GPU data
+        function renderTable(gpus) {
+            const tbody = document.getElementById('gpu-tbody');
+            const table = document.getElementById('gpu-table');
+            const loading = document.getElementById('loading');
+            
+            // Clear existing table rows
+            tbody.innerHTML = '';
+            
+            // Populate table with GPU data
+            gpus.forEach(gpu => {
+                const row = document.createElement('tr');
+                
+                row.innerHTML = `
+                    <td>${gpu.id}</td>
+                    <td>${gpu.vendor}</td>
+                    <td>${gpu.name}</td>
+                    <td>${gpu.generation}</td>
+                    <td>${gpu.serial_number}</td>
+                    <td>${gpu.owner}</td>
+                    <td>${gpu.borrowee ? gpu.borrowee : '<span class="null-value">Not borrowed</span>'}</td>
+                    <td><span class="status status-${gpu.status}">${gpu.status}</span></td>
+                    <td>${gpu.additional_info?.memory || '<span class="null-value">N/A</span>'}</td>
+                    <td>${gpu.additional_info?.release_year || '<span class="null-value">N/A</span>'}</td>
+                `;
+                
+                tbody.appendChild(row);
+            });
+            
+            // Hide loading, show table
+            loading.style.display = 'none';
+            table.style.display = 'table';
+        }
+
+        // Sort table by column
+        function sortTable(column) {
+            // Toggle sort direction if clicking the same column
+            if (sortColumn === column) {
+                sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+            } else {
+                sortColumn = column;
+                sortDirection = 'asc';
+            }
+            
+            // Update sort indicators
+            updateSortIndicators();
+            
+            // Sort the data
+            const sortedGPUs = [...currentGPUs].sort((a, b) => {
+                let aValue, bValue;
+                
+                // Get values based on column
+                switch(column) {
+                    case 'id':
+                        aValue = a.id;
+                        bValue = b.id;
+                        break;
+                    case 'vendor':
+                        aValue = a.vendor;
+                        bValue = b.vendor;
+                        break;
+                    case 'name':
+                        aValue = a.name;
+                        bValue = b.name;
+                        break;
+                    case 'generation':
+                        aValue = a.generation;
+                        bValue = b.generation;
+                        break;
+                    case 'serial_number':
+                        aValue = a.serial_number;
+                        bValue = b.serial_number;
+                        break;
+                    case 'owner':
+                        aValue = a.owner;
+                        bValue = b.owner;
+                        break;
+                    case 'borrowee':
+                        aValue = a.borrowee || '';
+                        bValue = b.borrowee || '';
+                        break;
+                    case 'status':
+                        aValue = a.status;
+                        bValue = b.status;
+                        break;
+                    case 'memory':
+                        aValue = a.additional_info?.memory || '';
+                        bValue = b.additional_info?.memory || '';
+                        break;
+                    case 'release_year':
+                        aValue = a.additional_info?.release_year || 0;
+                        bValue = b.additional_info?.release_year || 0;
+                        break;
+                    default:
+                        return 0;
+                }
+                
+                // Handle numeric sorting for ID and release year
+                if (column === 'id' || column === 'release_year') {
+                    aValue = Number(aValue) || 0;
+                    bValue = Number(bValue) || 0;
+                } else {
+                    // Convert to string and make case-insensitive
+                    aValue = String(aValue).toLowerCase();
+                    bValue = String(bValue).toLowerCase();
+                }
+                
+                if (sortDirection === 'asc') {
+                    return aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
+                } else {
+                    return aValue > bValue ? -1 : aValue < bValue ? 1 : 0;
+                }
+            });
+            
+            // Re-render table with sorted data
+            renderTable(sortedGPUs);
+        }
+        
+        // Update sort indicators in column headers
+        function updateSortIndicators() {
+            // Reset all indicators
+            document.querySelectorAll('.sort-indicator').forEach(indicator => {
+                indicator.textContent = '↕';
+                indicator.classList.remove('active');
+            });
+            
+            // Set active indicator
+            if (sortColumn) {
+                const activeHeader = document.querySelector(`th[data-column="${sortColumn}"] .sort-indicator`);
+                if (activeHeader) {
+                    activeHeader.classList.add('active');
+                    activeHeader.textContent = sortDirection === 'asc' ? '↑' : '↓';
+                }
+            }
+        }
+
+        // Add GPU function (placeholder for now)
+function openAddGPUModal() {
+            document.getElementById('add-gpu-modal').style.display = 'block';
+        }
+
+        function closeAddGPUModal() {
+            document.getElementById('add-gpu-modal').style.display = 'none';
+        }
+
+        document.getElementById('add-gpu-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const loading = document.getElementById('loading');
+            const error = document.getElementById('error');
+            const successMessage = document.getElementById('success-message');
+            const submitButton = document.querySelector('#add-gpu-form button[type="submit"]');
+            
+            // Hide previous messages
+            error.style.display = 'none';
+            successMessage.style.display = 'none';
+            submitButton.disabled = true;
+            submitButton.textContent = 'Adding...';
+            
+            try {
+                // Get form data
+                const formData = new FormData(this);
+                const gpuData = {};
+                
+                // Convert form data to object
+                for (let [key, value] of formData.entries()) {
+                    if (value.trim() !== '') {
+                        gpuData[key] = value.trim();
+                    }
+                }
+                
+                // Convert numeric fields
+                if (gpuData.release_year) {
+                    gpuData.release_year = parseInt(gpuData.release_year);
+                }
+                
+                // Handle borrowee - set to null if empty
+                if (!gpuData.borrowee) {
+                    gpuData.borrowee = null;
+                }
+                
+                console.log('Submitting GPU data:', gpuData);
+                
+                // Send POST request to server
+                const response = await fetch('/api/gpus', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(gpuData)
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    // Success
+                    successMessage.textContent = `GPU "${gpuData.name}" has been successfully added to the database with ID ${result.id}!`;
+                    successMessage.style.display = 'block';
+                    
+                    // Reset form and close modal
+                    this.reset();
+                    closeAddGPUModal();
+                    
+                    // Refresh the GPU list
+                    await loadGPUs();
+                    
+                    // Hide success message after 5 seconds
+                    setTimeout(() => {
+                        successMessage.style.display = 'none';
+                    }, 5000);
+                } else {
+                    // Error from server
+                    throw new Error(result.error || 'Failed to add GPU');
+                }
+                
+            } catch (error) {
+                console.error('Error adding GPU:', error);
+                error.textContent = `Error: ${error.message}`;
+                error.style.display = 'block';
+            } finally {
+                submitButton.disabled = false;
+                submitButton.textContent = 'Add GPU';
+            }
+        });
+        
+        function resetForm() {
+            document.getElementById('add-gpu-form').reset();
+        }
+
+        // Load GPUs when page loads
+        // Filter functions
+function getFilteredGPUs() {
+            // Optionally hide available GPUs
+            if (document.getElementById('hide-available').checked) {
+                // Hide any GPU with status 'available'
+                return currentGPUs.filter(gpu => gpu.status !== 'available' && (document.getElementById('hide-missing').checked ? gpu.status !== 'missing' : true) && (document.getElementById('hide-in-use').checked ? gpu.status !== 'in-use' : true) && (document.getElementById('hide-loaned-out').checked ? gpu.status !== 'loaned-out' : true));
+            }
+            return currentGPUs.filter(gpu => {
+                if (document.getElementById('hide-missing').checked && gpu.status === 'missing') return false;
+                if (document.getElementById('hide-in-use').checked && gpu.status === 'in-use') return false;
+                if (document.getElementById('hide-loaned-out').checked && gpu.status === 'loaned-out') return false;
+                return true;
+            });
+        }
+        // Attach filter event listeners
+['hide-missing', 'hide-in-use', 'hide-loaned-out', 'hide-available'].forEach(id => {
+            document.getElementById(id).addEventListener('change', () => {
+                renderTable(getFilteredGPUs());
+            });
+        });
+        document.addEventListener('DOMContentLoaded', loadGPUs);
+    </script>
+</body>
+</html>
